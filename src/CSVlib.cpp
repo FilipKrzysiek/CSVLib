@@ -32,6 +32,9 @@ void CSVlib::read() {
     string rowtxt;
     if (head) {
         if (getline(csvFile, rowtxt)) {
+            if (isspace(rowtxt[rowtxt.size() - 1]))
+                rowtxt.pop_back();
+
             headV = getFileRow(rowtxt);
 
             //Checking strings and deleting quotes
