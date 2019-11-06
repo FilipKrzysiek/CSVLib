@@ -24,7 +24,7 @@ public:
      * @param head csv file have first line with col titles
      * @param delimiter default ','
      */
-    CSVlib(string fileName, bool head = true, char delimiter = ',');
+    CSVlib(string pathToFile, bool head = true, char delimiter = ',');
 
     CSVlib() {};
 
@@ -35,7 +35,12 @@ public:
      * @param delimiter default ','
      * @return true if success or false if error
      */
-    bool open(string filename, bool head = true, char delimiter = ',');
+    bool open(const string& pathToFile, bool head = true, char delimiter = ',');
+
+    /**
+     * @brief Closing file and clear
+     */
+    void close();
 
     /**
      * @brief Check critical error
@@ -50,77 +55,22 @@ public:
     vector<string> getHead();
 
     /**
-     * @brief Return all records
+     * @brief Return one row in vector
      * @return
      */
-    vector<vector<string>> getAll();
-
-    /**
-     * @brief Returns pointer to all records
-     * @return
-     */
-    vector<vector<string>> *getAllPointer();
-
-    /**
-     * @brief Return one row
-     * @return
-     */
-    //map<string, string> getRow();
     vector<string> getRow();
 
     /**
-     * @brief Return pointer to one row
+     * @brief Return one row in map
      * @return
      */
-    vector<string> *getPointerRow();
-
-    /**
-     * @brief Return one row and increment iterator
-     * @return
-     */
-    vector<string> getRowNext();
-
-    /**
-     * @brief Return pointer to one row and increment iterator
-     * @return
-     */
-    vector<string> *getPointerRowNext();
-
-    /**
-     * @brief Return vector with all rows
-     * @return
-     */
-    map<string, vector<string>> getAllMap();
-
-    /**
-     * @brief Return one row
-     * @return
-     */
-    //map<string, string> getRow();
     map<string, string> getRowMap();
-
-    /**
-     * @brief Return one row and increment iterator
-     * @return
-     */
-    map<string, string> getRowNextMap();
 
     /**
      * @brief Increment iterator
      * @return if has next true, if not have false
      */
     bool next();
-
-    /**
-     *
-     * @return amount of rows
-     */
-    int size();
-
-    /**
-     * @brief Set iterator to begin (0)
-     */
-    void setIteratorOnBegin();
 
     /**
      * @breif Ignoring white chars on begin and end field
@@ -142,17 +92,15 @@ public:
 
 private:
     ifstream csvFile;
-    vector<vector<string>> rows;
     vector<string> headV;
     vector<string> errors;
     bool criticalError = false;
     char delimiter = ',';
     bool head = true;
     bool ignoreWhiteChars = false;
+    string readedLine = "";
     unsigned short readLinesError = 0;
-    unsigned int iter = 0;
-
-    void read();
+    unsigned short cols = 0;
 
     string prepareString(string txt);
 
@@ -162,9 +110,10 @@ private:
 
     int count(string txt, string find);
 
-    void addError(string msg, bool critical = false);
+    void addError(const string& msg, bool critical = false);
 
     vector<string> getFileRow(string line);
+    vector<string> getFileRowChecked(const string& line);
 };
 
 

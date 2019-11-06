@@ -5,93 +5,48 @@
 #include <sstream>
 #include "../include/CSVlib.h"
 
-CSVlib::CSVlib(string fileName, bool head, char delimiter)
+CSVlib::CSVlib(string pathToFile, bool head, char delimiter)
         : delimiter(delimiter), head(head) {
-    open(fileName, head, delimiter);
+    open(pathToFile, head, delimiter);
 }
 
-bool CSVlib::open(string filename, bool head, char delimiter) {
+bool CSVlib::open(const string& pathToFile, bool head, char delimiter) {
     this->delimiter = delimiter;
     this->head = head;
-    csvFile.open(filename);
-    if (csvFile.is_open()) {
-        read();
-        csvFile.close();
-    } else {
-        addError("Can't open file: " + filename, true);
+    csvFile.open(pathToFile);
+    if (!csvFile.is_open()) {
+        addError("Can't open file: " + pathToFile, true);
         return false;
+    } else {
+        if(head){
+            if(next()){
+                headV = getFileRow(readedLine);
+
+                //Checking strings and deleting quotes
+                for (string &cell: headV) {
+                    if (cell.size() != 0) {
+                        cell = prepareString(cell);
+                    }
+                }
+                cols = headV.size();
+            } else {
+                addError("Can't get line when getting head", true);
+                return false;
+            }
+        } else {
+            if (next()){
+                cols = getFileRow(readedLine).size();
+            } else {
+                addError("Can't get First line in file", true);
+                return false;
+            }
+        }
     }
+    return true;
 }
 
 bool CSVlib::isOk() {
     return !criticalError;
-}
-
-void CSVlib::read() {
-    //Get col names
-    string rowtxt;
-    if (head) {
-        if (getline(csvFile, rowtxt)) {
-            if (isspace(rowtxt[rowtxt.size() - 1]))
-                rowtxt.pop_back();
-
-            headV = getFileRow(rowtxt);
-
-            //Checking strings and deleting quotes
-            for (string &cell: headV) {
-                if (cell.size() != 0) {
-                    cell = prepareString(cell);
-                }
-            }
-        } else {
-            addError("Can't get line when getting head", true);
-            return;
-        }
-    }
-
-    //Getting rest
-    while (getline(csvFile, rowtxt)) {
-        if (isspace(rowtxt[rowtxt.size() - 1]))
-            rowtxt.pop_back();
-
-        rows.push_back(getFileRow(rowtxt));
-    }
-
-    //Checking correction (all rows has the same cells)
-    int cols;
-    if (head) {
-        cols = headV.size();
-    } else {
-        cols = rows[0].size();
-    }
-
-    int lineNum = 1;
-    for (int i = 0; i < rows.size(); i++) {
-        if (rows[i].size() != cols) {
-            addError("Line " + to_string(lineNum) + " have no enought cells");
-            rows.erase(rows.begin() + i);
-            //Save to not skip some rows
-            i--;
-            lineNum++;
-            continue;
-        }
-
-        //Checking strings and deleting quotes
-        for (string &cell: rows[i]) {
-            if (cell.size() != 0) {
-                cell = prepareString(cell);
-            }
-        }
-        lineNum++;
-    }
-
-    //Creating head if not created
-    if (!head) {
-        for (int i = 0; i < rows[0].size(); i++) {
-            headV.push_back(to_string(i));
-        }
-    }
-
 }
 
 vector<string> CSVlib::getFileRow(string line) {
@@ -197,18 +152,22 @@ string CSVlib::correctQuotes(string txt) {
     return txt;
 }
 
-void CSVlib::setIteratorOnBegin() {
-    iter = 0;
-}
-
 bool CSVlib::next() {
-    if (iter < rows.size() - 1) {
-        iter++;
-        return true;
+    if(csvFile.is_open()) {
+        if(getline(csvFile, readedLine)){
+            if (isspace(readedLine[readedLine.size() - 1]))
+                readedLine.pop_back();
+        }
+        else {
+            readedLine = "";
+            return false;
+        }
     } else {
+        readedLine = "";
+        addError("File was closed!!", true);
         return false;
     }
-
+    
 }
 
 int CSVlib::count(string txt, string find) {
@@ -238,7 +197,7 @@ unsigned short CSVlib::getReadLinesError() {
     return readLinesError;
 }
 
-void CSVlib::addError(string msg, bool critical) {
+void CSVlib::addError(const string& msg, bool critical) {
     errors.push_back(msg);
     readLinesError++;
     criticalError = critical;
@@ -248,81 +207,61 @@ vector<string> CSVlib::getErrorsList() {
     return errors;
 }
 
-int CSVlib::size() {
-    return rows.size();
-}
-
-map<string, vector<string>> CSVlib::getAllMap() {
-    map<string, vector<string>> output;
-    short sizeHead = headV.size();
-
-    for (string &heads : headV) {
-        output[heads] = vector<string>();
-    }
-
-    for (auto &row :rows) {
-        for (int i = 0; i < sizeHead; i++) {
-            output[headV[i]].push_back(row[i]);
-        }
-    }
-    return output;
-}
-
 vector<string> CSVlib::getHead() {
     return headV;
 }
 
-vector<vector<string>> CSVlib::getAll() {
-    return rows;
-}
-
-vector<vector<string>> *CSVlib::getAllPointer() {
-    return &rows;
-}
-
 vector<string> CSVlib::getRow() {
-    return rows[iter];
-}
-
-vector<string> *CSVlib::getPointerRow() {
-    return &rows[iter];
-}
-
-vector<string> CSVlib::getRowNext() {
-    if (next())
-        return rows[iter - 1];
-    else
-        return rows[iter];
-}
-
-vector<string> *CSVlib::getPointerRowNext() {
-    if (next())
-        return &rows[iter - 1];
-    else
-        return &rows[iter];
+    vector <string> ret;
+    do {
+        ret = getFileRowChecked(readedLine);
+    }
+    while(ret.size() == 0);
+    return ret;
 }
 
 map<string, string> CSVlib::getRowMap() {
     map<string, string> output;
-    for (int i = 0; i < headV.size(); i++) {
-        output[headV[i]] = (rows[iter][i]);
+    vector <string> ret;
+    do {
+        ret = getFileRowChecked(readedLine);
+    }
+    while(ret.size() == 0);
+    for(int i = 0; i< headV.size(); i++){
+        output[headV[i]] = ret[i];
     }
     return output;
 }
 
-map<string, string> CSVlib::getRowNextMap() {
-    map<string, string> output;
-    if (next()) {
-        for (int i = 0; i < headV.size(); i++) {
-            output[headV[i]] = (rows[iter - 1][i]);
-        }
-    } else {
-        for (int i = 0; i < headV.size(); i++) {
-            output[headV[i]] = (rows[iter][i]);
-        }
+vector<string> CSVlib::getFileRowChecked(const string& line) {
+    vector <string> rows = getFileRow(line);
+    if (rows.size() != cols) {
+        addError("Line :" + line + " - have no enought cells");
+        return vector <string>();
     }
 
-    return output;
+    //Checking strings and deleting quotes
+    for (string &cell: rows) {
+        if (cell.size() != 0) {
+            cell = prepareString(cell);
+        }
+    }
+    return rows;
+}
+
+void CSVlib::close() {
+    csvFile.close();
+    headV.clear();
+    headV.shrink_to_fit();
+    errors.clear();
+    headV.shrink_to_fit();
+    criticalError = false;
+    delimiter = ',';
+    head = true;
+    ignoreWhiteChars = false;
+    readedLine = "";
+    readLinesError = 0;
+    cols = 0;
 }
 
 
