@@ -5,11 +5,13 @@
 #ifndef LIBRARIES1_CSVLIB_H
 #define LIBRARIES1_CSVLIB_H
 
+
 #include <string>
 #include <fstream>
 #include <istream>
 #include <vector>
 #include <map>
+#include <iostream>
 
 using namespace std;
 
@@ -19,76 +21,56 @@ public:
     /**
      * @brief Create object and open file and read it
      * @param fileName csv file name
+     * @param head csv file have first line with col titles
      * @param delimiter default ','
      */
-    CSVlib(string fileName, char delimiter = ',');
-    CSVlib(){};
+    CSVlib(string pathToFile, bool head = true, char delimiter = ',');
+
+    CSVlib() {};
 
     /**
      * @brief Open csv file and read it
      * @param fileName csv file name
+     * @param head csv file have first line with col titles
      * @param delimiter default ','
      * @return true if success or false if error
      */
-    bool open(string filename, char delimiter = ',');
+    bool open(const string& pathToFile, bool head = true, char delimiter = ',');
 
     /**
-     * @brief Check that csv was readed (readed rows > 0)
-     * @return
+     * @brief Closing file and clear
      */
-    bool isReaded();
+    void close();
 
     /**
-     * @brief Return vector with all rows
+     * @brief Check critical error
      * @return
      */
-    vector<map<string, string>> getAll();
+    bool isOk();
 
     /**
-     * @brief Return pointer to vector with all rows
+     * @brief Return head. If enabled head, return head, if not generated
      * @return
      */
-    vector<map<string, string>>* getAllPointer();
+    vector<string> getHead();
 
     /**
-     * @brief Return one row
+     * @brief Return one row in vector
      * @return
      */
-    map<string, string> getRow();
+    vector<string> getRow();
 
     /**
-     * @brief Return pointer to one row
+     * @brief Return one row in map
      * @return
      */
-    map<string, string>* getPointerRow();
-
-    /**
-     * @brief Return one row and increment iterator
-     * @return
-     */
-    map<string, string> getRowNext();
-
-    /**
-     * @brief Return pointer to one row and increment iterator
-     * @return
-     */
-    map<string, string>* getPointerRowNext();
+    map<string, string> getRowMap();
 
     /**
      * @brief Increment iterator
+     * @return if has next true, if not have false
      */
-    void next();
-
-    /**
-     *
-     * @return amount of rows
-     */
-    int size();
-
-    /**
-     * @brief Set iterator to begin (0)
-     */
-    void setIteratorOnBegin();
+    bool next();
 
     /**
      * @breif Ignoring white chars on begin and end field
@@ -96,23 +78,42 @@ public:
      */
     void setIgnoreWhiteChars(bool ignoreWhiteChars);
 
+    /**
+     * @brief Returns amount lines where is error
+     * @return
+     */
+    unsigned short getReadLinesError();
+
+    /**
+     * @brief Returns vectors with all errors
+     * @return
+     */
+    vector<string> getErrorsList();
+
 private:
     ifstream csvFile;
-    vector<map<string, string>> rows;
+    vector<string> headV;
+    vector<string> errors;
+    bool criticalError = false;
     char delimiter = ',';
+    bool head = true;
     bool ignoreWhiteChars = false;
+    string readedLine = "";
     unsigned short readLinesError = 0;
-public:
-    unsigned short getReadLinesError() const;
+    unsigned short cols = 0;
 
-private:
-    unsigned int iter = 0;
-
-    void read();
     string prepareString(string txt);
+
     string deleteWhiteChars(string txt);
+
     string correctQuotes(string txt);
+
     int count(string txt, string find);
+
+    void addError(const string& msg, bool critical = false);
+
+    vector<string> getFileRow(string line);
+    vector<string> getFileRowChecked(const string& line);
 };
 
 

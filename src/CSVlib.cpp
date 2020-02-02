@@ -36,6 +36,7 @@ bool CSVlib::open(const string& pathToFile, bool head, char delimiter) {
         } else {
             if (next()){
                 cols = getFileRow(readedLine).size();
+                csvFile.seekg(0, csvFile.beg);
             } else {
                 addError("Can't get First line in file", true);
                 return false;
@@ -167,7 +168,7 @@ bool CSVlib::next() {
         addError("File was closed!!", true);
         return false;
     }
-    
+    return true;
 }
 
 int CSVlib::count(string txt, string find) {
