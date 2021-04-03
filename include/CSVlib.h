@@ -36,6 +36,7 @@ public:
      * @return true if success or false if error
      */
     bool open(const string& pathToFile, bool head = true, char delimiter = ',');
+    //TODO: Create heads for no header
 
     /**
      * @brief Closing file and clear
